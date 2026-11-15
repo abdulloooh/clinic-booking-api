@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Clinic bookings</title>
+    <link rel="stylesheet" href="/assets/styles.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">Clinic desk</p>
+        <h1>Book an appointment</h1>
+        <p class="lede">Pick an open slot, leave your details, and get a booking id back.</p>
+      </header>
+
+      <section class="panel">
+        <div class="row">
+          <label>
+            Provider filter
+            <select id="provider">
+              <option value="">All providers</option>
+            </select>
+          </label>
+          <button type="button" id="refresh" class="secondary">Refresh slots</button>
+        </div>
+
+        <div id="slots" class="slots" aria-live="polite"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Your details</h2>
+        <form id="book-form">
+          <input type="hidden" id="slot_id" name="slot_id" />
+          <label>
+            Name
+            <input id="name" name="name" required placeholder="Ada Obi" autocomplete="name" />
+          </label>
+          <label>
+            Email
+            <input
+              id="email"
+              name="email"
+              type="email"
+              required
+              placeholder="ada@example.com"
+              autocomplete="email"
+            />
+          </label>
+          <button type="submit" id="book-btn" disabled>Book selected slot</button>
+        </form>
+        <p id="selected" class="muted">No slot selected yet.</p>
+      </section>
+
+      <section class="panel" id="confirmation" hidden>
+        <h2>Confirmation</h2>
+        <pre id="confirmation-body"></pre>
+        <button type="button" id="cancel-btn" class="secondary">Cancel this booking</button>
+      </section>
+
+      <p id="status" class="status" role="status"></p>
+    </main>
+    <script src="/assets/app.js" type="module"></script>
+  </body>
+</html>
