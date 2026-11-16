@@ -17,55 +17,61 @@ export const sql = postgres(url, {
 });
 
 export async function migrate() {
-  await sql`
-    create table if not exists slots (
-      id text primary key,
-      provider text not null,
-      start_at timestamptz not null,
-      end_at timestamptz not null
-    )
-  `;
+  // Serialize schema setup across concurrent serverless cold starts.
+  // Use a transaction lock so it works with Neon's pooled connections.
+  await sql.begin(async (tx) => {
+    await tx`select pg_advisory_xact_lock(87201401)`;
 
-  await sql`
-    create table if not exists bookings (
-      id text primary key,
-      slot_id text not null references slots(id),
-      name text not null,
-      email text not null,
-      status text not null check (status in ('confirmed', 'cancelled')),
-      created_at timestamptz not null default now(),
-      seq bigserial
-    )
-  `;
+    await tx`
+      create table if not exists slots (
+        id text primary key,
+        provider text not null,
+        start_at timestamptz not null,
+        end_at timestamptz not null
+      )
+    `;
 
-  // Only one confirmed booking per slot — this is what stops double booking under races.
-  await sql`
-    create unique index if not exists bookings_one_confirmed_per_slot
-    on bookings (slot_id)
-    where status = 'confirmed'
-  `;
+    await tx`
+      create table if not exists bookings (
+        id text primary key,
+        slot_id text not null references slots(id),
+        name text not null,
+        email text not null,
+        status text not null check (status in ('confirmed', 'cancelled')),
+        created_at timestamptz not null default now(),
+        seq bigserial
+      )
+    `;
 
-  await sql`create index if not exists bookings_email_seq on bookings (email, seq)`;
+    // Only one confirmed booking per slot — this is what stops double booking under races.
+    await tx`
+      create unique index if not exists bookings_one_confirmed_per_slot
+      on bookings (slot_id)
+      where status = 'confirmed'
+    `;
 
-  await sql`
-    create table if not exists idempotency_keys (
-      key text primary key,
-      body_hash text not null,
-      status_code integer not null,
-      response jsonb not null,
-      created_at timestamptz not null default now()
-    )
-  `;
+    await tx`create index if not exists bookings_email_seq on bookings (email, seq)`;
 
-  await sql`
-    create table if not exists booking_attempts (
-      id bigserial primary key,
-      email text not null,
-      attempted_at timestamptz not null default now()
-    )
-  `;
+    await tx`
+      create table if not exists idempotency_keys (
+        key text primary key,
+        body_hash text not null,
+        status_code integer not null,
+        response jsonb not null,
+        created_at timestamptz not null default now()
+      )
+    `;
 
-  await sql`create index if not exists booking_attempts_email_time on booking_attempts (email, attempted_at)`;
+    await tx`
+      create table if not exists booking_attempts (
+        id bigserial primary key,
+        email text not null,
+        attempted_at timestamptz not null default now()
+      )
+    `;
+
+    await tx`create index if not exists booking_attempts_email_time on booking_attempts (email, attempted_at)`;
+  });
 }
 
 export type SlotRow = {

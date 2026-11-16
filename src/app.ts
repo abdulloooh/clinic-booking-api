@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { serveStatic } from "@hono/node-server/serve-static";
-import { sql, type BookingRow, type SlotRow } from "./db.js";
+import { migrate, sql, type BookingRow, type SlotRow } from "./db.js";
 import { newBookingId } from "./ids.js";
 import {
   decodeCursor,
@@ -13,6 +13,7 @@ import {
 } from "./util.js";
 
 const API_KEY = process.env.API_KEY || "";
+const ready = migrate();
 
 type SlotInput = {
   id: string;
@@ -24,8 +25,15 @@ type SlotInput = {
 export function createApp() {
   const app = new Hono();
 
+  // Vercel Hono entry expects `export default app` (see vercel.json framework).
+  app.use("*", async (_c, next) => {
+    await ready;
+    await next();
+  });
+
   app.use("*", cors());
 
+  // Used locally; on Vercel, files in public/ are served by the CDN instead.
   app.use("/assets/*", serveStatic({ root: "./public" }));
   app.get("/", serveStatic({ root: "./public", path: "index.html" }));
 
@@ -444,3 +452,6 @@ async function requireApiKey(c: any, next: () => Promise<void>) {
   }
   await next();
 }
+
+// Vercel detects Hono apps via default export of a Hono instance.
+export default createApp();
