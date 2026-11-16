@@ -33,11 +33,9 @@ export function createApp() {
 
   app.use("*", cors());
 
-  // Local: serve public/ from disk. On Vercel the CDN serves public/**;
-  // registering serveStatic for "/" there returns 404 and shadows index.html.
-  if (process.env.VERCEL) {
-    app.get("/", (c) => c.redirect("/index.html", 302));
-  } else {
+  // Local: serve public/ from disk. On Vercel, do not register "/" — vercel.json
+  // rewrites "/" → "/index.html" so the URL stays "/" and the CDN serves the page.
+  if (!process.env.VERCEL) {
     app.use("/assets/*", serveStatic({ root: "./public" }));
     app.get("/", serveStatic({ root: "./public", path: "index.html" }));
   }
