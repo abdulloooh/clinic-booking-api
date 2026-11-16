@@ -297,7 +297,8 @@ export function createApp() {
   return app;
 }
 
-type SqlLike = typeof sql | Parameters<Parameters<typeof sql.begin>[0]>[0];
+// sql.begin's last overload is (options, cb); take the transaction client from that cb.
+type SqlLike = typeof sql | Parameters<Parameters<typeof sql.begin>[1]>[0];
 
 async function handleNewBooking(
   c: any,
