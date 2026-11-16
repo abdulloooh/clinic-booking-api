@@ -3,7 +3,7 @@ import { config as loadEnv } from "./load-env.js";
 
 loadEnv();
 
-// Neon on Vercel usually sets DATABASE_URL; some installs use POSTGRES_URL.
+// Use DATABASE_URL, or POSTGRES_URL if that is what the host provides.
 const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 if (!url) {
   throw new Error("DATABASE_URL or POSTGRES_URL is required");
