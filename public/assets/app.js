@@ -288,7 +288,7 @@ retryBtn.addEventListener("click", async () => {
     showConfirmation(
       booking,
       replayed
-        ? `Same key + body → same id ${booking.id} (level 4 idempotency).`
+        ? `Same key + body → same id ${booking.id} (no duplicate).`
         : `Booked ${booking.id}`,
     );
     await loadSlots();

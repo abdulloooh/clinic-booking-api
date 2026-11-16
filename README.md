@@ -42,7 +42,7 @@ npm run dev
 - Web page: `http://localhost:3000/`
 - Health: `http://localhost:3000/health`
 
-The page talks to `/web/*` helpers so the browser never sees the API key. Graders should call the real `/slots` and `/bookings` routes with `X-API-Key`.
+The page talks to `/web/*` helpers so the browser never sees the API key. API clients should call `/slots` and `/bookings` with `X-API-Key`.
 
 ## Tests
 
@@ -51,11 +51,3 @@ npm test
 ```
 
 Covers auth, validation, concurrent double-booking (25 parallel requests), cancel/rebook, idempotency, pagination, rate limiting, and the web helpers.
-
-## Loom talking points
-
-1. Open the web page → **Refresh slots** → book → show confirmation JSON.
-2. Click **Retry last request (idempotency)** → same booking id, no duplicate.
-3. Use **My bookings** → load by email → **Next page** (limit 2) → cancel one.
-4. Walk `src/app.ts` (routes) and the partial unique index in `src/db.ts`.
-5. Mention level 5 briefly: attempts table → 429.

@@ -157,7 +157,7 @@ export function createApp() {
     const idempotencyKey = c.req.header("Idempotency-Key")?.trim() || null;
     const bodyHash = hashBody(body);
 
-    // Level 4: serialize retries that share a key so concurrent duplicates cannot race.
+    // Serialize concurrent retries that share the same idempotency key.
     if (idempotencyKey) {
       return await sql.begin(async (tx) => {
         await tx`select pg_advisory_xact_lock(hashtext(${idempotencyKey}))`;
@@ -337,7 +337,7 @@ async function handleNewBooking(
   const emailRaw = typeof input.email === "string" ? input.email.trim() : "";
   const email = emailRaw.toLowerCase();
 
-  // Level 5: failed attempts count. Replays never reach this path.
+  // Cap attempts per email; idempotent replays never reach this path.
   if (email) {
     const limited = await checkRateLimit(db, email);
     if (limited) {
@@ -381,7 +381,7 @@ async function handleNewBooking(
 
   const bookingId = newBookingId();
 
-  // Level 3: the partial unique index decides the winner under simultaneous inserts.
+  // Partial unique index on confirmed bookings decides the winner under races.
   const inserted = await db<BookingRow[]>`
     insert into bookings (id, slot_id, name, email, status)
     values (${bookingId}, ${slotId}, ${name}, ${email}, 'confirmed')
@@ -403,6 +403,7 @@ async function handleNewBooking(
   return storeAndRespond(c, db, idempotencyKey, bodyHash, 201, serializeBooking(inserted[0]));
 }
 
+/** Returns Retry-After seconds when this email already has 5 attempts in the last 60s. */
 async function checkRateLimit(
   db: SqlLike,
   email: string,
