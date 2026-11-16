@@ -33,9 +33,17 @@ export function createApp() {
 
   app.use("*", cors());
 
-  // Local: serve public/ from disk. On Vercel, do not register "/" — vercel.json
-  // rewrites "/" → "/index.html" so the URL stays "/" and the CDN serves the page.
-  if (!process.env.VERCEL) {
+  // Local: serve public/ from disk. On Vercel, assets are on the CDN; "/" proxies
+  // the static index so the browser URL stays "/" (no redirect to /index.html).
+  if (process.env.VERCEL) {
+    app.get("/", async (c) => {
+      const res = await fetch(new URL("/index.html", c.req.url));
+      return new Response(res.body, {
+        status: res.status,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+    });
+  } else {
     app.use("/assets/*", serveStatic({ root: "./public" }));
     app.get("/", serveStatic({ root: "./public", path: "index.html" }));
   }
