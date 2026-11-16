@@ -54,7 +54,8 @@ Covers auth, validation, concurrent double-booking (25 parallel requests), cance
 
 ## Loom talking points
 
-1. Open the web page → refresh slots → book → show confirmation JSON.
-2. Cancel and show the slot become available again.
-3. Walk `src/app.ts` (routes) and the partial unique index in `src/db.ts`.
-4. Mention levels 4–5 briefly: idempotency table + attempts table.
+1. Open the web page → **Refresh slots** → book → show confirmation JSON.
+2. Click **Retry last request (idempotency)** → same booking id, no duplicate.
+3. Use **My bookings** → load by email → **Next page** (limit 2) → cancel one.
+4. Walk `src/app.ts` (routes) and the partial unique index in `src/db.ts`.
+5. Mention level 5 briefly: attempts table → 429.

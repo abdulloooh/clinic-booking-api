@@ -144,8 +144,13 @@ button.secondary {
   box-shadow: inset 0 0 0 1px var(--accent);
 }
 
-.slot.taken {
+.slot.taken,
+.booking-row.cancelled {
   opacity: 0.55;
+}
+
+.booking-row button.secondary {
+  padding: 0.45rem 0.9rem;
 }
 
 .slot strong {

@@ -55,7 +55,36 @@
       <section class="panel" id="confirmation" hidden>
         <h2>Confirmation</h2>
         <pre id="confirmation-body"></pre>
-        <button type="button" id="cancel-btn" class="secondary">Cancel this booking</button>
+        <div class="row">
+          <button type="button" id="cancel-btn" class="secondary">Cancel this booking</button>
+          <button type="button" id="retry-btn" class="secondary" hidden>
+            Retry last request (idempotency)
+          </button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>My bookings</h2>
+        <p class="muted">Look up by email and page through results (level 4).</p>
+        <form id="lookup-form" class="row">
+          <label>
+            Email
+            <input
+              id="lookup-email"
+              name="lookup-email"
+              type="email"
+              required
+              placeholder="ada@example.com"
+              autocomplete="email"
+            />
+          </label>
+          <button type="submit" id="lookup-btn" class="secondary">Load bookings</button>
+        </form>
+        <div id="bookings" class="slots" aria-live="polite"></div>
+        <div class="row" id="bookings-pager" hidden>
+          <button type="button" id="next-page" class="secondary">Next page</button>
+          <p id="bookings-meta" class="muted"></p>
+        </div>
       </section>
 
       <p id="status" class="status" role="status"></p>

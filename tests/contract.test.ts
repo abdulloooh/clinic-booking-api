@@ -314,7 +314,7 @@ describe("level 5 rate limit", () => {
 });
 
 describe("web helpers", () => {
-  it("lets the page book without sending an API key", async () => {
+  it("lets the page book, list, and page without sending an API key", async () => {
     const slots = await app.request("/web/slots");
     expect(slots.status).toBe(200);
 
@@ -328,5 +328,28 @@ describe("web helpers", () => {
       }),
     });
     expect(booked.status).toBe(201);
+
+    await app.request("/web/bookings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        slot_id: "s2",
+        name: "Web User",
+        email: "web@example.com",
+      }),
+    });
+
+    const page1 = await app.request("/web/bookings?email=web@example.com&limit=1");
+    expect(page1.status).toBe(200);
+    const page1Json = await page1.json();
+    expect(page1Json.bookings).toHaveLength(1);
+    expect(page1Json.next_cursor).toBeTruthy();
+
+    const page2 = await app.request(
+      `/web/bookings?email=web@example.com&limit=1&cursor=${page1Json.next_cursor}`,
+    );
+    const page2Json = await page2.json();
+    expect(page2Json.bookings).toHaveLength(1);
+    expect(page2Json.next_cursor).toBeNull();
   });
 });
