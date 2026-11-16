@@ -23,6 +23,7 @@ let currentBooking = null;
 let lastBookRequest = null;
 let bookingsCursor = null;
 let bookingsEmail = "";
+let allProviderNames = [];
 
 function setStatus(message, kind = "") {
   statusEl.textContent = message;
@@ -40,13 +41,11 @@ function formatWhen(iso) {
 }
 
 async function api(path, options = {}) {
-  const res = await fetch(path, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-    ...options,
-  });
+  const headers = new Headers(options.headers || {});
+  if (options.body && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+  const res = await fetch(path, { ...options, headers });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const err = new Error(data.error || `Request failed (${res.status})`);
@@ -87,9 +86,8 @@ function renderSlots(slots) {
   }
 }
 
-function fillProviders(slots) {
-  const current = providerEl.value;
-  const names = [...new Set(slots.map((s) => s.provider))].sort();
+function fillProviders(names, selected = "") {
+  allProviderNames = names;
   providerEl.innerHTML = `<option value="">All providers</option>`;
   for (const name of names) {
     const opt = document.createElement("option");
@@ -97,21 +95,32 @@ function fillProviders(slots) {
     opt.textContent = name;
     providerEl.appendChild(opt);
   }
-  providerEl.value = names.includes(current) ? current : "";
+  providerEl.value = names.includes(selected) ? selected : "";
 }
 
-async function loadSlots() {
+async function fetchAllSlots() {
+  const { data } = await api("/web/slots");
+  return data.slots;
+}
+
+async function loadSlots({ resetFilter = false } = {}) {
   setStatus("Loading slots…");
-  const qs = providerEl.value
-    ? `?provider=${encodeURIComponent(providerEl.value)}`
-    : "";
-  const { data } = await api(`/web/slots${qs}`);
-  if (!providerEl.dataset.ready) {
-    fillProviders(data.slots);
-    providerEl.dataset.ready = "1";
+  if (resetFilter) providerEl.value = "";
+
+  const provider = providerEl.value;
+  const slots = provider
+    ? (await api(`/web/slots?provider=${encodeURIComponent(provider)}`)).data.slots
+    : await fetchAllSlots();
+
+  // Provider list must always come from the full unfiltered set.
+  if (!allProviderNames.length || resetFilter || !provider) {
+    const allSlots = provider ? await fetchAllSlots() : slots;
+    const names = [...new Set(allSlots.map((s) => s.provider))].sort();
+    fillProviders(names, provider);
   }
-  renderSlots(data.slots);
-  setStatus(`${data.slots.length} slot(s) loaded.`, "ok");
+
+  renderSlots(slots);
+  setStatus(`${slots.length} slot(s) loaded.`, "ok");
 }
 
 function showConfirmation(booking, note = "") {
@@ -308,8 +317,8 @@ nextPageBtn.addEventListener("click", async () => {
 });
 
 refreshBtn.addEventListener("click", () => {
-  providerEl.dataset.ready = "";
-  loadSlots().catch((err) => setStatus(err.message, "err"));
+  slotsEl.innerHTML = `<p class="muted">Refreshing…</p>`;
+  loadSlots({ resetFilter: true }).catch((err) => setStatus(err.message, "err"));
 });
 
 providerEl.addEventListener("change", () => {
@@ -320,4 +329,4 @@ emailEl.addEventListener("change", () => {
   if (!lookupEmailEl.value) lookupEmailEl.value = emailEl.value;
 });
 
-loadSlots().catch((err) => setStatus(err.message, "err"));
+loadSlots({ resetFilter: true }).catch((err) => setStatus(err.message, "err"));
